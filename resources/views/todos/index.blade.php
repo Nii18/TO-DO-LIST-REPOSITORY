@@ -41,7 +41,15 @@
                     <a class="btn btn-sm btn-dark" href="{{ route('todos.create') }}">Create To-do List</a> 
                     <a class="btn btn-sm btn-warning" href="{{ route('todos.restore.view') }}" style="float: right;">Restore Deleted To-do Lists</a>
                     <hr>
-  
+
+                    <!-- Dropdown for Voice Selection -->
+                    <div class="mb-3">
+                        <label for="voiceSelection" class="form-label">Select Voice:</label>
+                        <select id="voiceSelection" class="form-select">
+                            <!-- Voice options will be dynamically populated -->
+                        </select>
+                    </div>
+
                     @if (count($todos) > 0)
                         <table class="table">
                             <thead>
@@ -78,6 +86,11 @@
                                                 <input type="hidden" name="todo_id" value="{{ $todo->id }}">
                                                 <input type="submit" class="btn btn-sm btn-danger" value="Delete">
                                             </form>
+
+                                            <!-- Add Read Aloud Button -->
+                                            <button class="inner btn btn-sm btn-primary" onclick="speakText('{{ $todo->title }}: {{ $todo->description }}')">
+                                                🔊 Read Aloud
+                                            </button>
                                         </td>
                                     </tr>
                                 @endforeach
@@ -91,4 +104,57 @@
         </div>
     </div>
 </div>
+
+<!-- JavaScript for TTS functionality -->
+<script>
+    const voiceSelect = document.getElementById('voiceSelection');
+    let voices = [];
+
+    // Populate the dropdown with available voices
+    function populateVoiceList() {
+        voices = window.speechSynthesis.getVoices();
+
+        // Clear existing options
+        voiceSelect.innerHTML = '';
+
+        // Add voice options to the dropdown
+        voices.forEach((voice, index) => {
+            const option = document.createElement('option');
+            option.textContent = `${voice.name} (${voice.lang})`;
+            option.value = index;
+            voiceSelect.appendChild(option);
+        });
+    }
+
+    // Call populateVoiceList when voices change (some browsers need this)
+    if (typeof speechSynthesis !== 'undefined' && speechSynthesis.onvoiceschanged !== undefined) {
+        speechSynthesis.onvoiceschanged = populateVoiceList;
+    }
+
+    // Function to speak the text with the selected voice
+    function speakText(text) {
+        if ('speechSynthesis' in window) {
+            const utterance = new SpeechSynthesisUtterance(text);
+
+            // Get selected voice
+            const selectedVoiceIndex = voiceSelect.value;
+            if (voices[selectedVoiceIndex]) {
+                utterance.voice = voices[selectedVoiceIndex];
+            }
+
+            // Set additional options (optional)
+            utterance.lang = voices[selectedVoiceIndex]?.lang || 'en-US';
+            utterance.rate = 1;
+            utterance.pitch = 1;
+
+            // Speak the text
+            window.speechSynthesis.speak(utterance);
+        } else {
+            alert('Sorry, your browser does not support text-to-speech.');
+        }
+    }
+
+    // Initialize voice list on page load
+    document.addEventListener('DOMContentLoaded', populateVoiceList);
+</script>
 @endsection
